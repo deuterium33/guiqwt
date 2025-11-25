@@ -170,8 +170,6 @@ class ImageIOHandler(object):
     def _get_filetype(self, ext):
         """Return FileType object associated to file extension `ext`"""
         for ftype in self.filetypes:
-            if not ext:
-                ext = '.txt'
             if ext.lower() in ftype.extensions:
                 return ftype
         else:
@@ -525,27 +523,6 @@ def _imread_raw(filename, params={}):
                 data = np.fromfile(f, dtype=dtype, count=np.prod(shape))
                 data = data.reshape(shape[::-1])
             return data
-        
-def _imread_hdf5(filename,params={}):
-    import h5py 
-    from guidata.dataset.datatypes import DataSet
-    from guidata.dataset.dataitems import StringItem
-    from guidata.dataset.dataitems import IntItem
-    class HDF5Param(DataSet):
-        dataset = StringItem(_("Dataset name"))
-        event_number = IntItem(_("Event number"))
-    params = HDF5Param(_("HDF5 parameters"))
-    if not params.edit():
-        return
-    hdf5_file_name = filename
-    dataset_name   = params.dataset
-    event_number   = params.event_number
-    file    = h5py.File(hdf5_file_name, 'r')
-    dataset = file[dataset_name]
-    arr1ev  = dataset[event_number]
-    file.close()
-    return arr1ev
-    
             
 
 # ==============================================================================
@@ -553,21 +530,27 @@ def _imread_hdf5(filename,params={}):
 # ==============================================================================
 def _imread_txt(filename):
     """Open text file image and return a NumPy array"""
-    for delimiter in ('\t', ',', ' ', ';'):
-        try: 
-            skip = 0
-            with open(filename,'r') as f:
-                while True :
-                    a=f.readline().split(delimiter)[0].strip()[:2]
-                    if a[0].isdigit() or ((a[0]=="-" or a[0]=="+") and a[1].isdigit()):
-                	     break
-                    skip+=1
-                data = np.loadtxt(filename, skiprows=skip)
-            return data
-        except:
+    skip = 0
+    with open(filename,'r') as f:
+        while True :
+            a=f.readline()[:2]
+            if a[0].isdigit() or ((a[0]=="-" or a[0]=="+") and a[1].isdigit()):
+                break
+            skip+=1
+    for delimiter in ('\t', ',', ' ', ';','|'):
+        try:
+            data=np.genfromtxt(filename, delimiter=delimiter, skip_header=skip,filling_values=0.)
+            if len(data.shape)<2:
+                continue
+            else:
+                print("Delimiter : %s"%(delimiter))
+                print("Skip rows : %s"%(skip))
+                return data
+        except ValueError:
             continue
-        else:
-            raise
+    else:
+        raise
+
 
 def _imwrite_txt(filename, arr):
     """Write `arr` NumPy array to text file `filename`"""
@@ -621,7 +604,7 @@ iohandler.add(_("SIF files"), '*.sif', read_func=_imread_sif)
 # ==============================================================================
 # Generic image read/write functions
 # ==============================================================================
-def imread(fname, ext=None, to_grayscale=False, params={}):
+def imread(fname, ext=None, to_grayscale=False):
     """Return a NumPy array from an image filename `fname`.
 
     If `to_grayscale` is True, convert RGB images to grayscale

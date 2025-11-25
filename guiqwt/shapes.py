@@ -737,7 +737,14 @@ class PolygonShape(AbstractShape):
             pen2.setStyle(Qt.DotLine)
             painter.setPen(pen2)
             painter.drawPolyline(other_points)
-
+            
+    def get_length(self):
+        pts = self.points
+        length = 0
+        for i in range(pts.shape[0]-1):
+            length+=np.sqrt((pts[i+1][0]-pts[i][0])**2+(pts[i+1][1]-pts[i][1])**2)
+        return length
+    
     def poly_hit_test(self, plot, ax, ay, pos):
         pos = QPointF(pos)
         dist = sys.maxsize

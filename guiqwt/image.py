@@ -597,8 +597,8 @@ class BaseImageItem(QwtPlotItem):
             yMap.transform(yb) + 1,
         )
 
-        W = canvasRect.right()
-        H = canvasRect.bottom()
+        W = int(canvasRect.right())
+        H = int(canvasRect.bottom())
         if self._offscreen.shape != (H, W):
             self._offscreen = np.empty((H, W), np.uint32)
             self._image = QImage(self._offscreen, W, H, QImage.Format_ARGB32)

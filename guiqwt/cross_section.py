@@ -74,7 +74,7 @@ class CrossSectionItem(ErrorBarCurveItem):
         ErrorBarCurveItem.__init__(self, curveparam, errorbarparam)
         self.setOrientation(self.ORIENTATION)
         self.perimage_mode = True
-        self.autoscale_mode = False
+        self.autoscale_mode = True
         self.apply_lut = False
         self.source = None
 
@@ -183,7 +183,7 @@ def get_plot_x_section(obj, apply_lut=False):
         )
     except (ValueError, ZeroDivisionError, TypeError):
         return np.array([]), np.array([])
-    y = data.mean(axis=0)
+    y = np.nanmean(data,axis=0)
     x0, _y0 = canvas_to_axes(obj, QPointF(xc0, yc0))
     x1, _y1 = canvas_to_axes(obj, QPointF(xc1, yc1))
     x = np.linspace(x0, x1, len(y))
@@ -214,7 +214,7 @@ def get_plot_y_section(obj, apply_lut=False):
         )
     except (ValueError, ZeroDivisionError, TypeError):
         return np.array([]), np.array([])
-    y = data.mean(axis=1)
+    y = np.nanmean(data,axis=1)
     _x0, y0 = canvas_to_axes(obj, QPointF(xc0, yc0))
     _x1, y1 = canvas_to_axes(obj, QPointF(xc1, yc1))
     x = np.linspace(y0, y1, len(y))
@@ -247,7 +247,7 @@ def get_plot_average_x_section(obj, apply_lut=False):
         )
     except (ValueError, ZeroDivisionError, TypeError):
         return np.array([]), np.array([])
-    y = data.mean(axis=0)
+    y = np.nanmean(data,axis=0)
     if invert:
         y = y[::-1]
     x = np.linspace(x0, x1, len(y))
@@ -280,7 +280,7 @@ def get_plot_average_y_section(obj, apply_lut=False):
         )
     except (ValueError, ZeroDivisionError, TypeError):
         return np.array([]), np.array([])
-    y = data.mean(axis=1)
+    y = np.nanmean(data,axis=1)
     x = np.linspace(y0, y1, len(y))
     if invert:
         x = x[::-1]
@@ -1004,9 +1004,9 @@ def compute_oblique_section(item, obj):
             TEMP_ITEM.imageparam.ymax = ymax
             TEMP_ITEM.imageparam.update_image(TEMP_ITEM)
         plot.replot()
-
-    ydata = np.ma.fix_invalid(dst_image, copy=DEBUG).mean(axis=1)
-    xdata = item.get_x_values(0, ydata.size)[: ydata.size]
+    
+    ydata = np.nanmean(np.ma.fix_invalid(dst_image, copy=DEBUG),axis=1)
+    xdata = item.get_x_values(0, ydata.size)[:ydata.size]
     try:
         xdata -= xdata[0]
     except IndexError:
@@ -1047,8 +1047,8 @@ class ObliqueCrossSectionPlot(HorizontalCrossSectionPlot):
     def __init__(self, parent=None):
         super(ObliqueCrossSectionPlot, self).__init__(parent)
         self.set_title(self.PLOT_TITLE)
-        self.single_source = True
-
+        self.single_source = False
+        
     def create_cross_section_item(self):
         return ObliqueCrossSectionItem(self.curveparam)
 
